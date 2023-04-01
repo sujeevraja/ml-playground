@@ -6,6 +6,9 @@ name = "pypi"
 [packages]
 numpy = "*"
 gymnasium = "*"
+box2d = "*"
+pygame = "*"
+box2d-kengz = "*"
 
 [dev-packages]
 autopep8 = "*"
