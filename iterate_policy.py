@@ -11,7 +11,7 @@ import typing
 log = logging.getLogger(__name__)
 
 
-class PolicyIteration:
+class BellmanPolicyIteration:
     """Class to find the value function objected by iterating a given policy
     over a square grid with given size.
 
@@ -23,6 +23,8 @@ class PolicyIteration:
     """
 
     def __init__(self, square_length: int):
+        self.tolerance: float = 0.001
+
         # Actions are up/down/left/right directions on a 4X4 grid.
         self.actions = ['N', 'S', 'E', 'W']
 
@@ -37,7 +39,7 @@ class PolicyIteration:
         # are likely to terminate in a terminal state.
         self.discount_factor = 1.0
 
-    def run(self, policy: typing.Dict[str, float], iterations: int):
+    def run(self, policy: typing.Dict[str, float], iterations: int = 1000):
         """Solve the Bellman iterative equation with the given policy."""
         # Note that `rewards` below is an expected reward computed as
         # R'_s = Expectation[R_{t+1} | S_t = s]. However, as there is no
@@ -47,18 +49,25 @@ class PolicyIteration:
         # states.
         rewards = np.full((self.num_squares), -1.0)
         rewards[0] = rewards[-1] = 0
-        log.info(f"expected rewards: {rewards}")
+        rewards.shape = (self.num_squares, 1)  # make it a column vector
+        log.debug(f"expected rewards: {rewards}")
 
         stm = self.build_state_transition_matrix(policy)
-        log.info(f"state transition matrix:\n{stm}")
-        value = np.zeros((self.num_squares))
-        log.info(f"initial value:\n{value}")
-        for i in range(iterations):
-            value = np.transpose(rewards) + \
-                np.matmul(stm, np.transpose(value))
+        log.debug(f"state transition matrix:\n{stm}")
+        prev_values = np.zeros((self.num_squares))
+        prev_values.shape = (self.num_squares, 1)  # make it a column vector
 
-            if (i+1) in {1, 2, 3, 10} or i == iterations - 1:
-                log.info(f"iteration {i+1}:\n{self._prettify(value)}")
+        for i in range(iterations):
+            values = rewards + np.matmul(stm, prev_values)
+            max_diff = np.absolute(values - prev_values).max()
+            if max_diff <= self.tolerance:
+                log.info(f"num iterations for tol {self.tolerance}: {i+1}")
+                break
+
+            prev_values = values
+
+        log.info(f"final max_diff: {np.round(max_diff,3)}")
+        return self._prettify(values)
 
     def _prettify(self, value):
         return np.round(value.reshape(self.size, self.size), 1)
@@ -133,14 +142,14 @@ def main():
     # avoid line wrapping when printing numpy objects
     np.set_printoptions(linewidth=np.inf)
 
+    pi = BellmanPolicyIteration(square_length=4)
     policy = {
         'N': 0.25,
         'S': 0.25,
         'E': 0.25,
         'W': 0.25,
     }
-    num_squares_per_side = 4
-    PolicyIteration(num_squares_per_side).run(policy, 115)
+    log.info(f"final state value function:\n{pi.run(policy)}")
 
 
 if __name__ == '__main__':
