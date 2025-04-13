@@ -70,6 +70,8 @@ class GridWorld(typing.NamedTuple):
             n = i - 1
             return n if ((i % self.size) != 0) else i
 
+        raise ValueError("unknown action")
+
 
 def build_rewards(num_squares: int):
     """Build rewards for the grid world with the given number of squares.
@@ -95,7 +97,7 @@ def build_state_transition_matrix(
     To clarify what this is, we set up the following notation:
     > A is the set of actions with cardinality |A|.
     > S is the set of states with cardinality |S|.
-    > \pi(a|s) = Prob[action = a | state = s] for a \in A, s \in S.
+    > \\pi(a|s) = Prob[action = a | state = s] for a \\in A, s \\in S.
     > P^a is the state transition probability matrix for fixed action a.
         It has dimension (|S|x|S|). P^a(s1,s2) is the probability of
         transitioning from state s1 to state s2 (s1 being the row index and
@@ -103,10 +105,10 @@ def build_state_transition_matrix(
         1 if s2 is the neighbor of s1 for action a and 0 otherwise.
 
     As the given policy depends only on the action and is independent of
-    the state s, \pi(a|s) is just a scalar value for fixed a. To clarify
-    this independence of state, we can just denote the policy as \pi(a).
+    the state s, \\pi(a|s) is just a scalar value for fixed a. To clarify
+    this independence of state, we can just denote the policy as \\pi(a).
 
-    We want to compute and return P = \sum_{a \in A} \pi(a) P^a.
+    We want to compute and return P = \\sum_{a \\in A} \\pi(a) P^a.
 
     Args:
         gd: Grid world on which the the policy is to be evaluated.
@@ -160,6 +162,8 @@ def run(
             log.info(f"num iterations for tol {atol}: {i+1}")
             break
         prev_values = values
+        if i%10 == 0:
+            log.info(f"iteration {i} {np.round(values.reshape(n, n), 1)}")
 
     log.info(f"final max_diff: {np.round(max_diff,3)}")
     return np.round(values.reshape(n, n), 1)
@@ -170,7 +174,7 @@ def main():
                         level=logging.INFO)
 
     # avoid line wrapping when printing numpy objects
-    np.set_printoptions(linewidth=np.inf)
+    np.set_printoptions(linewidth=1000)  # Using integer instead of np.inf
 
     policy = {
         'N': 0.25,
